@@ -46,6 +46,7 @@ function Tile(letter,value){
 	var self=this;
 	this.letter=letter;
 	this.value=value;
+	this.block=false;
 	this.player;
 }
 
@@ -87,7 +88,7 @@ function Game(){
 		this.drawAnimation(tile, player);
 	}
 	this.place=function(tile,coord){
-		if(!tile || this.board[coord.x][coord.y].letter){return;}
+		if(!tile || this.board[coord.x][coord.y].letter || this.board[coord.x][coord.y].block){return;}
 		let hand=tile.player.hand;
 		let check=this.getWordFromBoard(coord,tile.letter);
 		// TODO: if(this is not a legal move){return;}
@@ -143,13 +144,79 @@ function Game(){
 	let boardSize={
 		width: 15
 		,height: 15
+		,maxBranch: 4
 	};
 	for(var i=0; i<boardSize.width; i++){
 		let col=[];
 		for(var j=0; j<boardSize.height; j++){
-			col.push({});
+			col.push({block:true});
 		}
 		this.board.push(col);
+	}
+	let free=[]; // An array of coordinates pointing to free spaces
+	let initialX=Math.floor(Math.random()*boardSize.width);
+	let initialY=Math.floor(Math.random()*boardSize.height);
+	this.board[initialX][initialY]={block:false};
+	free.push({x:initialX,y:initialY});
+	let maxSquares=Math.floor(boardSize.width*boardSize.height*.6)
+	let end=boardSize.width*boardSize.height*16;
+	for(var i=0; free.length<maxSquares && i<end; i++){
+		let root=free[Math.floor(Math.random()*free.length)];
+		let limit=Math.floor(Math.random()*boardSize.maxBranch);
+		let overhead=boardSize.maxBranch-limit;
+		let direction=Math.floor(Math.random()*4);
+		function verticalClearance(x){
+			return((root.y==0 || self.board[x][root.y-1].block)
+				&& (root.y==boardSize.height-1 || self.board[x][root.y+1].block)
+			)?true:false;
+		}
+		function horizontalClearance(y){
+			return((root.x==0 || self.board[root.x-1][y].block)
+				&& (root.x==boardSize.width-1 || self.board[root.x+1][y].block)
+			)?true:false;
+		}
+		switch(direction){
+			case 0: // Left
+					for(var x=root.x-1; ( x>-1
+						&& this.board[x][root.y].block
+						&& root.x-x<=limit
+						&& verticalClearance(x)
+					); x--){
+						this.board[x][root.y].block=false;
+						free.push({x:x,y:root.y});
+					}
+				break;
+			case 1: // Right
+					for(var x=root.x+1; ( x<boardSize.width
+						&& this.board[x][root.y].block
+						&& x-root.x<=limit
+						&& verticalClearance(x)
+					); x++){
+						this.board[x][root.y].block=false;
+						free.push({x:x,y:root.y});
+					}
+				break;
+			case 2: // Up
+					for(var y=root.y-1; ( y>-1
+						&& this.board[root.x][y].block
+						&& root.y-y<=limit
+						&& horizontalClearance(y)
+					); y--){
+						this.board[root.x][y].block=false;
+						free.push({x:root.x,y:y});
+					}
+				break;
+			case 3: // Down
+					for(var y=root.y+1; ( y<boardSize.height
+						&& this.board[root.x][y].block
+						&& y-root.y<=limit
+						&& horizontalClearance(y)
+					); y++){
+						this.board[root.x][y].block=false;
+						free.push({x:root.x,y:y});
+					}
+				break;
+		}
 	}
 	
 	// Populate the pool with tiles

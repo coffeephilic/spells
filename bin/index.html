@@ -74,15 +74,21 @@
 							var square=document.createElement("div");
 							square.coord={x:x,y:y};
 							square.classList="square";
-							square.addEventListener("click",this.placeSelected);
-							square.addEventListener("dragover",function(event){event.preventDefault();});
-							square.addEventListener("drop",this.placeSelected);
+							if(!game.board[x][y].block){
+								square.addEventListener("click",this.placeSelected);
+								square.addEventListener("dragover",function(event){event.preventDefault();});
+								square.addEventListener("drop",this.placeSelected);
+							}else{
+								square.classList.add("block");
+							}
 							gameBoard.appendChild(square);
 							if(!gameBoard.grid[x]){gameBoard.grid[x]=[];}
 							gameBoard.grid[x][y]=square;
 						}
 					}
 					container.appendChild(gameBoard);
+					let h=square.offsetHeight-20;
+					gameBoard.style.fontSize="max(1em, "+h+"px)";
 					
 					let tray=document.createElement("div");
 					tray.id="tray";
