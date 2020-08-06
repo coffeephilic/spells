@@ -18,8 +18,8 @@ function getTextFromFile(path,callback){
 }
 
 // Build the dictionary
-loadScript("/lib/js/thirdParty/hunspell-spellchecker/lib/dictionary.js" //TODO: replace this after the dictionary.c.js file is finished
-	,function(){loadScript("/lib/js/thirdParty/hunspell-spellchecker/lib/index.js"
+loadScript("/../lib/js/thirdParty/hunspell-spellchecker/lib/dictionary.js" //TODO: replace this after the dictionary.c.js file is finished
+	,function(){loadScript("/../lib/js/thirdParty/hunspell-spellchecker/lib/index.js"
 		,function(){
 			window.dictionary=new Spellchecker();
 			var dictionaryPackage={aff:"",dic:""};
