@@ -1,0 +1,181 @@
+<!-- ### SPELLS ###
+
+### credits ###
+
+# Game designer: Charlie McCarron
+# Software developer: Josh Wilson
+
+### contents ###
+
+# index.html -- The script on this page is the only place where the DOM is
+    referenced.
+# fn.js -- All classes and most functions related to the game state.  Note
+    that the classes related to display and animations are overwritten by
+    index.html.
+# /lib/js/ -- various first-party libraries and collections, intended to be
+    reused on different projects.
+
+ -->
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="UTF-8"/>
+	<link rel="stylesheet" type="text/css" href="style.css" />
+	<link rel="shortcut icon" type="image/x-icon" href="skin/icon.png" />
+	<script>
+	</script>
+</head>
+<body>
+	<div id="container"></div>
+	<!--<script src="/lib/js/dictionary.c.js"></script>-->
+	<script src="fn.js"></script>
+	<script>
+		document.body.onload=main;
+		
+		Game=(function(g){
+			function Game(){
+				g.apply(this);
+				var self=this;
+				this.display=function(){
+					let container=document.getElementById("container");
+					container.innerHTML="";
+					
+					let menu=document.createElement("div");
+					menu.id="menu";
+					let scoreBoard=document.createElement("div");
+					scoreBoard.id="scoreBoard";
+					for(var i=0; i<this.lineup.length; i++){
+						let name=document.createElement("span");
+						name.classList="name player"+i;
+						name.innerText=this.lineup[i].name;
+						scoreBoard.appendChild(name);
+						let score=document.createElement("score");
+						score.classList="score player"+i;
+						score.id="score"+i;
+						score.innerText=this.lineup[i].score;
+						scoreBoard.appendChild(score);
+					}
+					menu.appendChild(scoreBoard);
+					let newGameButton=document.createElement("div");
+					newGameButton.innerText="New Game";
+					newGameButton.classList="button";
+					newGameButton.addEventListener("click",function(){window.location=window.location;});
+					menu.appendChild(newGameButton);
+					container.appendChild(menu);
+					
+					let gameBoard=document.createElement("div");
+					gameBoard.id="gameBoard";
+					gameBoard.grid=[];
+					let boardSize={width:this.board.length, height:this.board[0].length};
+					gameBoard.style.gridTemplateColumns="repeat("+boardSize.width+", 1fr)";
+					gameBoard.style.gridTemplateRows="repeat("+boardSize.height+", 1fr)";
+					for(var y=0; y<game.board[0].length; y++){
+						for(var x=0; x<game.board.length; x++){
+							var square=document.createElement("div");
+							square.coord={x:x,y:y};
+							square.classList="square";
+							square.addEventListener("click",this.placeSelected);
+							square.addEventListener("dragover",function(event){event.preventDefault();});
+							square.addEventListener("drop",this.placeSelected);
+							gameBoard.appendChild(square);
+							if(!gameBoard.grid[x]){gameBoard.grid[x]=[];}
+							gameBoard.grid[x][y]=square;
+						}
+					}
+					container.appendChild(gameBoard);
+					
+					let tray=document.createElement("div");
+					tray.id="tray";
+					container.appendChild(tray);
+					
+				}
+				this.buildTile=function(tile){
+						var tileElement=document.createElement("div");
+						tile.element=tileElement;
+						tileElement.innerText=tile.letter;
+						tileElement.tile=tile;
+						tileElement.classList="tile player"+this.lineup.indexOf(tile.player);
+						tileElement.select=function(){
+							self.lineup[self.currentPlayer].selectedTile=this.tile;
+							let allTiles=tray.getElementsByClassName("tile");
+							for(var j=0; j<allTiles.length; j++){
+								allTiles[j].classList.remove("selected");
+							}
+							this.classList.add("selected");
+						}
+						tileElement.addEventListener("click",tileElement.select);
+						tileElement.addEventListener("drag",tileElement.select);
+						tileElement.draggable=true;
+						return tileElement;
+				}
+				this.nextTurnAnimation=function(){
+					var player=this.lineup[this.currentPlayer];
+					var tray=document.getElementById("tray");
+					tray.innerHTML="";
+					let passButton=document.createElement("div");
+					passButton.classList="button";
+					passButton.innerText="Pass";
+					passButton.addEventListener("click",function(){self.nextTurn();});
+					tray.appendChild(passButton);
+					for(var i=0; i<player.hand.length; i++){
+						tray.appendChild(this.buildTile(player.hand[i]));
+					}
+				}
+				this.drawAnimation=function(tile, player){
+					let tileElement=this.buildTile(tile);
+					document.getElementById("tray").appendChild(tileElement);
+					tileElement.select();
+				}
+				this.placeAnimation=function(tile,coord){
+					let square=document.getElementById("gameBoard").grid[coord.x][coord.y];
+					square.appendChild(tile.element);
+					tile.element.removeEventListener("click", tile.element.select);
+					tile.element.removeEventListener("drag", tile.element.select);
+					tile.element.classList.remove("selected");
+					tile.element.draggable=false;
+				}
+				this.evaluateWordAnimation=function(coordCollection, word){
+					let grid=document.getElementById("gameBoard").grid;
+					function flare(element,delay=0){
+						let t=setTimeout(function(){
+							element.classList.add("flare");
+							let t1=setTimeout(function(){element.classList.remove("flare");},600);
+						},delay*120);
+					}
+					let playerUpdate=[];
+					for(var i=0; i<this.lineup.length; i++){playerUpdate.push(false);}
+					for(var i=0; i<coordCollection.length; i++){
+						let coord=coordCollection[i];
+						var tile=this.board[coord.x][coord.y];
+						playerUpdate[this.lineup.indexOf(tile.player)]=true;
+						tile.element.classList.add("word");
+						flare(tile.element,i);
+					}
+					for(var i=0; i<playerUpdate.length; i++){
+						if(!playerUpdate[i]){continue;}
+							let scoreContainer=document.getElementById("score"+i);
+							scoreContainer.innerText=this.lineup[i].score;
+							flare(scoreContainer);
+					}
+				}
+				
+				this.placeSelected=function(event){
+					event.preventDefault();
+					if(event.target.isOccupied){return;}
+					self.place(self.lineup[self.currentPlayer].selectedTile,event.target.coord);
+					event.target.isOccupied;
+				}
+			}
+			Game.prototype=g.prototype;
+			Game.prototype.constructor=Game;
+			return Game;
+		})(Game);
+		
+		function main(){
+			window.game=new Game();
+			game.display();
+			game.nextTurnAnimation();
+		}
+	</script>
+</body>
+</html>
