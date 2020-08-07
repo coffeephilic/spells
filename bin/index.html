@@ -62,6 +62,8 @@
 					newGameButton.addEventListener("click",function(){window.location=window.location;});
 					menu.appendChild(newGameButton);
 					container.appendChild(menu);
+					let scoreTextHeight=(menu.offsetHeight-160)/this.lineup.length; console.log(scoreBoard);
+					scoreBoard.style.fontSize="min(1em, "+scoreTextHeight+"px)";
 					
 					let gameBoard=document.createElement("div");
 					gameBoard.id="gameBoard";
@@ -87,8 +89,8 @@
 						}
 					}
 					container.appendChild(gameBoard);
-					let h=square.offsetHeight-20;
-					gameBoard.style.fontSize="max(1em, "+h+"px)";
+					let tileLetterHeight=square.offsetHeight-20;
+					gameBoard.style.fontSize="max(1em, "+tileLetterHeight+"px)";
 					
 					let tray=document.createElement("div");
 					tray.id="tray";
@@ -123,6 +125,7 @@
 					passButton.innerText="Pass";
 					passButton.addEventListener("click",function(){self.nextTurn();});
 					tray.appendChild(passButton);
+					tray.appendChild(document.createElement("hr"));
 					for(var i=0; i<player.hand.length; i++){
 						tray.appendChild(this.buildTile(player.hand[i]));
 					}
@@ -145,7 +148,7 @@
 					function flare(element,delay=0){
 						let t=setTimeout(function(){
 							element.classList.add("flare");
-							let t1=setTimeout(function(){element.classList.remove("flare");},600);
+							let t1=setTimeout(function(){element.classList.remove("flare");},1200);
 						},delay*120);
 					}
 					let playerUpdate=[];

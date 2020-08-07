@@ -1,11 +1,11 @@
 :root {
 	
 	--accent: ffd8c7;
-	--background: #d4d4d4;
-	--backgroundInactive: #adadad;
+	--background: #d4d4d4c0;
+	--backgroundInactive: #adadad80;
 	--matteDark: #656565;
 	--matteLight: #ededed;
-	--line: #4d4d4d;
+	--line: #4d4d4d80;
 	/*--button: */
 	--text: #4d4d4d;
 	--textInactive:#8ba2b3;
@@ -16,7 +16,7 @@
 	--input: Courier;
 	
 	--borderRadius: 4%;
-	/*--matteBlur: */
+	--matteBlur: 2px;
 	
 	--player0: #e3fcea;
 	--player1: #fcf7e3;
@@ -42,6 +42,8 @@
 	height: 100vh;
 	font-family: var(--system);
 	color: var(--text);
+	background: url("skin/background.jpg") no-repeat center center fixed;
+	background-size: cover;
 	transition: .6s;
 }
 @media only screen and (max-width: 100vh){
@@ -75,21 +77,31 @@
 }
 .square {
 	background-color: var(--background);
+	backdrop-filter: blur(var(--matteBlur));
 }
 .square:hover {
 	background-color: var(--accent);
 }
+.square.block {
+	background-color: var(--backgroundInactive);
+}
 
-#tray {
+#tray, #menu, .square {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 }
+@media only screen and (max-width: 100vh){
+	#tray, #menu, .square {
+		flex-direction: inherit;
+		flex-flow: wrap;
+	}
+}
 
 .tile, .button {
 	position: relative;
-	width: min(100%, 100px);
+	width: min(100%, 80px);
 	border-radius: var(--borderRadius);
 	box-shadow: 1.5px 1.5px 3px inset var(--matteLight), -1.5px -1.5px 3px inset var(--matteDark);
 	text-align: center;
@@ -97,10 +109,21 @@
 	transition: .6s;
 	user-select: none;
 }
+.button {
+	background-color: var(--matteLight);
+}
+.button:after {
+	content:"";
+	width:100%;
+}
+#tray hr {
+	width: 100%;
+	border: 0;
+}
 .tile {
-	height: min(100%, 100px);
-	line-height: 100px;
-	font-size: 80px;
+	height: min(100%, 80px);
+	line-height: 80px;
+	font-size: 60px;
 	font-family: var(--display);
 }
 #gameBoard .tile {
@@ -142,5 +165,48 @@
 
 .flare {
 	z-index: 10;
-	transform: scale(1.2);
+	overflow: hidden;
+	animation: flare 1.2s;
+	text-shadow: -2px -2px 2px var(--matteDark);
+}
+@keyframes flare {
+	0% {
+		transform: scale(1);
+		text-shadow: 2px 2px 2px var(--matteDark);
+	}
+	50% {
+		transform: scale(2);
+		text-shadow: 0px 0px 2px var(--matteDark);
+	}
+	100% {
+		transform: scale(1);
+		text-shadow: -2px -2px 2px var(--matteDark);
+	}
+}
+.flare:after{
+	content:"";
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	animation: flareGradient 1.2s linear;
+	background-image: linear-gradient(-45deg, transparent, transparent, var(--matteLight), transparent, transparent);
+	transform: scale(2);
+	opacity: 0;
+}
+@keyframes flareGradient {
+	0%{
+		opacity: 0;
+		top: -50%;
+		left: -50%
+	}
+	50% {
+		opacity: 1;
+		top:0;
+		left: 0;
+	}
+	100% {
+		opacity: 0;
+		top: 50%;
+		left: 50%;
+	}
 }
