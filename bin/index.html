@@ -90,7 +90,8 @@
 					}
 					container.appendChild(gameBoard);
 					let tileLetterHeight=square.offsetHeight-20;
-					gameBoard.style.fontSize="max(1em, "+tileLetterHeight+"px)";
+					//gameBoard.style.fontSize="max(1em, "+tileLetterHeight+"px)"; // Safari on iOS does not seem to do well with this.
+					gameBoard.style.fontSize=tileLetterHeight;
 					
 					let tray=document.createElement("div");
 					tray.id="tray";

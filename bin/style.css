@@ -104,6 +104,7 @@
 	width: min(100%, 80px);
 	border-radius: var(--borderRadius);
 	box-shadow: 1.5px 1.5px 3px inset var(--matteLight), -1.5px -1.5px 3px inset var(--matteDark);
+	-webkit-box-shadow:  1.5px 1.5px 3px inset var(--matteLight), -1.5px -1.5px 3px inset var(--matteDark);
 	text-align: center;
 	z-index:1;
 	transition: .6s;
