@@ -129,7 +129,8 @@
 	font-family: var(--display);
 }
 #gameBoard .tile {
-	height: 100%;
+	height: 6vh;
+	height: min(6vh, 80px, 100%);
 	line-height: inherit;
 	font-size: 1em;
 	display: flex;
