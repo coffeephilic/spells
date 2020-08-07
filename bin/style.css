@@ -122,12 +122,14 @@
 	border: 0;
 }
 .tile {
+	height: 80px;
 	height: min(100%, 80px);
 	line-height: 80px;
 	font-size: 60px;
 	font-family: var(--display);
 }
 #gameBoard .tile {
+	height: 100%;
 	line-height: inherit;
 	font-size: 1em;
 	display: flex;
