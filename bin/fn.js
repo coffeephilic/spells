@@ -46,15 +46,25 @@ function Tile(letter,value){
 	var self=this;
 	this.letter=letter;
 	this.value=value;
+	this.type;
 	this.block=false;
 	this.player;
+}
+
+function Die(type, face=[]){
+	var self=this;
+	this.type=type;
+	this.face=face;
+	this.roll=function(){
+		return this.face[Math.floor(Math.random()*this.face.length)];
+	}
 }
 
 function Player(){
 	var self=this;
 	this.name="";
 	this.score=0;
-	this.hand=[];
+	this.hand=[]; // Deprecated; Tiles are now selected from Game.pool
 	this.selectedTile;
 	this.isBot=false;
 	
@@ -68,17 +78,19 @@ function Game(){
 	//this.dictionary=new Dictionary(); TODO: consider uncommenting this line after dictionary.c.js is finished
 	this.board=[];
 	this.pool=[];
+	this.cup=[];
 	this.lineup=[];
 	this.currentPlayer=-1;
 	
 	// These methods get overwritten in whatever module is designated for the UI
 	this.display=function(){}
 	this.drawAnimation=function(tile,player){}
+	this.rollAnimation=function(){}
 	this.placeAnimation=function(tile,coord){}
 	this.nextTurnAnimation=function(){}
 	this.evaluteWordAnimation=function(coordCollection, word){}
 	
-	this.draw=function(player){
+	this.draw=function(player){ // Deprecated in favor of this.roll
 		if(!this.pool.length){return;}
 		this.pool.sort(function(){return 0.5-Math.random();});
 		var tile=this.pool.pop();
@@ -87,16 +99,29 @@ function Game(){
 		tile.player=player;
 		this.drawAnimation(tile, player);
 	}
+	this.roll=function(){
+		this.cup.sort(function(){return 0.5-Math.random();});
+		this.pool=[];
+		for(var i=0; i<this.cup.length; i++){
+			let t=this.cup[i].roll();
+			let tile=new Tile(t.letter, t.value);
+			tile.type=this.cup[i].type;
+			this.pool.push(tile);
+		}
+		this.rollAnimation();
+	}
 	this.place=function(tile,coord){
 		if(!tile || this.board[coord.x][coord.y].letter || this.board[coord.x][coord.y].block){return;}
-		let hand=tile.player.hand;
+		//let hand=tile.player.hand;
+		tile.player=this.lineup[this.currentPlayer];
 		let check=this.getWordFromBoard(coord,tile.letter);
 		// TODO: if(this is not a legal move){return;}
-		this.board[coord.x][coord.y]=hand.splice(hand.indexOf(tile),1)[0];
+		//this.board[coord.x][coord.y]=hand.splice(hand.indexOf(tile),1)[0]; // Only if playing from the hand; If playing from the pool, then:
+		this.board[coord.x][coord.y]=this.pool.splice(this.pool.indexOf(tile),1)[0];
 		tile.player.selectedTile=null;
 		this.placeAnimation(tile,coord);
-		if(check.horizontalCoords.length > 1 && dictionary.check(check.horizontal)){this.evaluateWord(check.horizontalCoords);}
-		if(check.verticalCoords.length > 1 && dictionary.check(check.vertical)){this.evaluateWord(check.verticalCoords);}
+		if(check.horizontalCoords.length > 1 && dictionary.check(check.horizontal)){this.evaluateWord(check.horizontalCoords, check.horizontalFill);}
+		if(check.verticalCoords.length > 1 && dictionary.check(check.vertical)){this.evaluateWord(check.verticalCoords, check.verticalFill);}
 		this.nextTurn();
 	}
 	this.getWordFromBoard=function(coord,placeholder){
@@ -117,24 +142,37 @@ function Game(){
 			output.vertical+=((placeholder && i==coord.y)?placeholder:this.board[coord.x][i].letter);
 			output.verticalCoords.push({x:coord.x,y:i});
 		}
+		//Find whether the letters fill the available spaces
+		output.horizontalFill=(
+			output.xMin != output.xMax // Range is more than one letter
+			&& (output.xMin==0 || this.board[output.xMin-1][coord.y].block)
+			&& (output.xMax==this.board.length-1 || this.board[output.xMax+1][coord.y].block)
+		)?true:false;
+		output.verticalFill=(
+			output.yMin != output.yMax
+			&& (output.yMin==0 || this.board[coord.x][output.yMin-1].block)
+			&& (output.yMax==this.board[0].length-1 || this.board[coord.x][output.yMax+1].block)
+		)?true:false;
 		return output;
 	}
-	this.evaluateWord=function(coordCollection, word){
+	this.evaluateWord=function(coordCollection, fillsContainer){
 		// Scoring subject to change
 		for(var i=0; i<coordCollection.length; i++){
 			let tile=this.board[coordCollection[i].x][coordCollection[i].y];
 			tile.player.score+=tile.value;
 		}
-		this.evaluateWordAnimation(coordCollection, word);
+		if(fillsContainer){this.lineup[this.currentPlayer].score+=1;}
+		this.evaluateWordAnimation(coordCollection);
 	}
 	this.nextTurn=function(){
 		this.currentPlayer=(this.currentPlayer+1<this.lineup.length)?this.currentPlayer+1:0;
 		this.nextTurnAnimation();
 		let player=this.lineup[this.currentPlayer];
-		let handSize=5;
-		while(player.hand.length<handSize && this.pool.length){
-			this.draw(player);
-		}
+		// let handSize=5;
+		// while(player.hand.length<handSize && this.pool.length){
+		// 	this.draw(player);
+		// }
+		if(!this.pool.length){this.roll();}
 		if(player.isBot){
 			player.autoplay();
 		}
@@ -252,6 +290,36 @@ function Game(){
 		for(var j=0; j<t[i].quant; j++){
 			this.pool.push(new Tile(t[i].l,t[i].v));
 		}
+	} this.pool=[];
+	
+	// Populate the cup with dice
+	// t:0=vowels
+	// t:1=common consonants
+	// t:2=not-so-common consonants
+	// t:3=rare consonants
+	let d=[
+		{t:0, f:["A","E","I","O","U","Y"]}
+		,{t:0, f:["A","E","I","O","U","E"]}
+		,{t:0, f:["A","E","I","O","U","E"]}
+		,{t:0, f:["A","E","I","O","U","A"]}
+		,{t:1, f:["G","H","R","S","T","L"]}
+		,{t:1, f:["N","M","R","S","T","B"]}
+		,{t:1, f:["N","P","W","S","T","L"]}
+		,{t:1, f:["N","B","R","S","G","H"]}
+		,{t:2, f:["C","L","P","W","D","K"]}
+		,{t:2, f:["C","L","P","W","D","K"]}
+		,{t:2, f:["C","L","P","W","D","K"]}
+		,{t:2, f:["C","L","P","W","D","K"]}
+		,{t:3, f:["F","V","Q","X","Z","J"]}
+		,{t:3, f:["F","V","Q","X","Z","J"]}
+		,{t:3, f:["F","V","Q","X","Z","J"]}
+	];
+	for(var i=0; i<d.length; i++){
+		let face=[];
+		for(var j=0; j<d[i].f.length; j++){
+			face.push(new Tile(d[i].f[j],1));
+		}
+		this.cup.push(new Die(d[i].t,face));
 	}
 	
 	// Populate the lineup with players

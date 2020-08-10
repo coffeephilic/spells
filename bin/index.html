@@ -49,7 +49,7 @@
 						name.classList="name player"+i;
 						name.innerText=this.lineup[i].name;
 						scoreBoard.appendChild(name);
-						let score=document.createElement("score");
+						let score=document.createElement("span");
 						score.classList="score player"+i;
 						score.id="score"+i;
 						score.innerText=this.lineup[i].score;
@@ -103,7 +103,7 @@
 						tile.element=tileElement;
 						tileElement.innerText=tile.letter;
 						tileElement.tile=tile;
-						tileElement.classList="tile player"+this.lineup.indexOf(tile.player);
+						tileElement.classList.add("tile","player"+this.currentPlayer,"die"+tile.type);
 						tileElement.select=function(){
 							self.lineup[self.currentPlayer].selectedTile=this.tile;
 							let allTiles=tray.getElementsByClassName("tile");
@@ -120,7 +120,7 @@
 				this.nextTurnAnimation=function(){
 					var player=this.lineup[this.currentPlayer];
 					var tray=document.getElementById("tray");
-					tray.innerHTML="";
+					/*tray.innerHTML="";
 					let passButton=document.createElement("div");
 					passButton.classList="button";
 					passButton.innerText="Pass";
@@ -129,12 +129,31 @@
 					tray.appendChild(document.createElement("hr"));
 					for(var i=0; i<player.hand.length; i++){
 						tray.appendChild(this.buildTile(player.hand[i]));
+					}*/
+					let t=tray.getElementsByClassName("tile");
+					for(var i=0; i<t.length; i++){
+						t[i].classList.remove("player0","player1","player2","player3");
+						t[i].classList.add("player"+this.currentPlayer);
 					}
 				}
 				this.drawAnimation=function(tile, player){
 					let tileElement=this.buildTile(tile);
 					document.getElementById("tray").appendChild(tileElement);
 					tileElement.select();
+				}
+				this.rollAnimation=function(){
+					let tray=document.getElementById("tray");
+					tray.innerHTML="";
+					let passButton=document.createElement("div");
+					passButton.classList="button";
+					passButton.innerText="Pass";
+					passButton.addEventListener("click",function(){self.nextTurn();});
+					tray.appendChild(passButton);
+					//tray.appendChild(document.createElement("hr"));
+					for(var i=0; i<this.pool.length; i++){
+						let tileElement=this.buildTile(this.pool[i]);
+						tray.appendChild(tileElement);
+					}
 				}
 				this.placeAnimation=function(tile,coord){
 					let square=document.getElementById("gameBoard").grid[coord.x][coord.y];
@@ -144,7 +163,7 @@
 					tile.element.classList.remove("selected");
 					tile.element.draggable=false;
 				}
-				this.evaluateWordAnimation=function(coordCollection, word){
+				this.evaluateWordAnimation=function(coordCollection){
 					let grid=document.getElementById("gameBoard").grid;
 					function flare(element,delay=0){
 						let t=setTimeout(function(){
@@ -184,6 +203,7 @@
 		function main(){
 			window.game=new Game();
 			game.display();
+			game.rollAnimation();
 			game.nextTurnAnimation();
 		}
 	</script>

@@ -15,7 +15,7 @@
 	--system: Tahoma, Helvetica, sans-serif;
 	--input: Courier;
 	
-	--borderRadius: 4%;
+	--borderRadius: 4px;
 	--matteBlur: 2px;
 	
 	--player0: #e3fcea;
@@ -59,8 +59,12 @@
 #scoreBoard {
 	display: grid;
 	grid-template-columns: min-content min-content;
-	grid-gap: 12px;
+	grid-gap: 4px;
 	white-space: nowrap;
+}
+#scoreBoard span {
+	padding: var(--borderRadius);
+	border-radius: var(--borderRadius);
 }
 .score {
 	font-family: var(--input);
@@ -98,6 +102,15 @@
 		flex-flow: wrap;
 	}
 }
+#tray {
+	flex-wrap: wrap;
+	height: 100vh;
+}
+@media only screen and (max-width: 100vh){
+	#tray {
+		height: auto;
+	}
+}
 
 .tile, .button {
 	position: relative;
@@ -117,20 +130,23 @@
 	content:"";
 	width:100%;
 }
+#tray .tile {
+	margin: 2px;
+}
 #tray hr {
 	width: 100%;
 	border: 0;
 }
 .tile {
 	height: 80px;
-	height: min(100%, 80px);
+	height: min(100%, 80px, auto);
 	line-height: 80px;
 	font-size: 60px;
 	font-family: var(--display);
 }
 #gameBoard .tile {
 	height: 6vh;
-	height: min(6vh, 80px, 100%);
+	height: min(6vh, 80px, 100%, auto);
 	line-height: inherit;
 	font-size: 1em;
 	display: flex;
@@ -144,27 +160,47 @@
 
 .player0 {
 	background-color: var(--player0);
+	--playerColor: var(--player0);
 }
 .player1 {
 	background-color: var(--player1);
+	--playerColor: var(--player1);
 }
 .player2 {
 	background-color: var(--player2);
+	--playerColor: var(--player2);
 }
 .player3 {
 	background-color: var(--player3);
+	--playerColor: var(--player3);
 }
 .tile.word.player0, .tile.selected.player0 {
 	background-color: var(--player0Highlight);
+	--playerColor: var(--player0Highlight);
 }
 .tile.word.player1, .tile.selected.player1 {
 	background-color: var(--player1Highlight);
+	--playerColor: var(--player1Highlight);
 }
 .tile.word.player2, .tile.selected.player2 {
 	background-color: var(--player2Highlight);
+	--playerColor: var(--player2Highlight);
 }
 .tile.word.player3, .tile.selected.player3 {
 	background-color: var(--player3Highlight);
+	--playerColor: var(--player3Highlight);
+}
+.tile.die0 {
+	background: linear-gradient(45deg, white 0%, var(--playerColor) 50%);
+}
+.tile.die1 {
+	background: linear-gradient(45deg, orange 0%, var(--playerColor) 50%);
+}
+.tile.die2 {
+	background: linear-gradient(45deg, green 0%, var(--playerColor) 50%);
+}
+.tile.die3 {
+	background: linear-gradient(45deg, yellow 0%, var(--playerColor) 50%);
 }
 
 .flare {
@@ -176,15 +212,15 @@
 @keyframes flare {
 	0% {
 		transform: scale(1);
-		text-shadow: 2px 2px 2px var(--matteDark);
+		/*text-shadow: 2px 2px 2px var(--matteDark);*/
 	}
 	50% {
-		transform: scale(2);
-		text-shadow: 0px 0px 2px var(--matteDark);
+		transform: scale(1.6);
+		/*text-shadow: 0px 0px 2px var(--matteDark);*/
 	}
 	100% {
 		transform: scale(1);
-		text-shadow: -2px -2px 2px var(--matteDark);
+		/*text-shadow: -2px -2px 2px var(--matteDark);*/
 	}
 }
 .flare:after{
@@ -192,12 +228,14 @@
 	position: absolute;
 	width: 100%;
 	height: 100%;
-	animation: flareGradient 1.2s linear;
-	background-image: linear-gradient(-45deg, transparent, transparent, var(--matteLight), transparent, transparent);
-	transform: scale(2);
+	animation: flareOverlay 1.2s linear;
+	/*background-image: linear-gradient(-45deg, transparent, transparent, var(--matteLight), transparent, transparent);*/
+	background-color: var(--matteLight);
+	z-index: 20;
+	transform: scale(1.6);
 	opacity: 0;
 }
-@keyframes flareGradient {
+@keyframes flareOverlay {
 	0%{
 		opacity: 0;
 		top: -50%;
