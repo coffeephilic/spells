@@ -23,22 +23,33 @@
 	<link rel="stylesheet" type="text/css" href="style.css" />
 	<link rel="shortcut icon" type="image/x-icon" href="skin/icon.png" />
 	<script>
+		window.setup={
+			user:[]
+			,defaultName:[
+				"Player 1"
+				,"Player 2"
+				,"Player 3"
+				,"Player 4"
+			]
+		};
 	</script>
 </head>
 <body>
-	<div id="container"></div>
+	<div id="container" class="settings"></div>
 	<!--<script src="/lib/js/dictionary.c.js"></script>-->
 	<script src="fn.js"></script>
 	<script>
 		document.body.onload=main;
 		
 		Game=(function(g){
-			function Game(){
-				g.apply(this);
+			function Game(userName){
+				g.apply(this, [userName]);
 				var self=this;
 				this.display=function(){
 					let container=document.getElementById("container");
 					container.innerHTML="";
+					container.classList.remove("settings");
+					container.classList.add("game");
 					
 					let menu=document.createElement("div");
 					menu.id="menu";
@@ -59,11 +70,11 @@
 					let newGameButton=document.createElement("div");
 					newGameButton.innerText="New Game";
 					newGameButton.classList="button";
-					newGameButton.addEventListener("click",function(){window.location=window.location;});
+					newGameButton.addEventListener("click",function(){gameSettings();});
 					menu.appendChild(newGameButton);
 					container.appendChild(menu);
-					let scoreTextHeight=(menu.offsetHeight-160)/this.lineup.length; console.log(scoreBoard);
-					scoreBoard.style.fontSize="min(1em, "+scoreTextHeight+"px)";
+					let scoreTextHeight=(menu.offsetHeight-160)/this.lineup.length;
+					scoreBoard.style.fontSize="max(.4em, min(1em, "+scoreTextHeight+"px))";
 					
 					let gameBoard=document.createElement("div");
 					gameBoard.id="gameBoard";
@@ -80,6 +91,17 @@
 								square.addEventListener("click",this.placeSelected);
 								square.addEventListener("dragover",function(event){event.preventDefault();});
 								square.addEventListener("drop",this.placeSelected);
+								switch(game.board[x][y].type){
+									case 1:
+											square.classList.add("initial");
+										break;
+									case 2:
+											square.classList.add("vowelBonus");
+										break;
+									case 3:
+											square.classList.add("consonantBonus");
+										break;
+								}
 							}else{
 								square.classList.add("block");
 							}
@@ -89,7 +111,7 @@
 						}
 					}
 					container.appendChild(gameBoard);
-					let tileLetterHeight=square.offsetHeight-20;
+					let tileLetterHeight=square.offsetHeight-12;
 					//gameBoard.style.fontSize="max(1em, "+tileLetterHeight+"px)"; // Safari on iOS does not seem to do well with this.
 					gameBoard.style.fontSize=tileLetterHeight;
 					
@@ -161,6 +183,7 @@
 					tile.element.removeEventListener("click", tile.element.select);
 					tile.element.removeEventListener("drag", tile.element.select);
 					tile.element.classList.remove("selected");
+					square.classList.remove("initial","vowelBonus","consonantBonus");
 					tile.element.draggable=false;
 				}
 				this.evaluateWordAnimation=function(coordCollection){
@@ -200,11 +223,73 @@
 			return Game;
 		})(Game);
 		
-		function main(){
-			window.game=new Game();
+		function startGame(){
+			window.game=new Game(setup.user);
 			game.display();
 			game.rollAnimation();
 			game.nextTurnAnimation();
+		}
+		
+		function gameSettings(){
+			let container=document.getElementById("container");
+			container.innerHTML="";
+			container.classList.remove("game");
+			container.classList.add("settings");
+			
+			let question=document.createElement("span");
+			let number=document.createElement("input");
+			let list=document.createElement("div");
+			let start=document.createElement("span");
+			
+			function updateList(n){
+				let nameInput=list.getElementsByTagName("input");
+				let user=window.setup.user;
+				let defaultName=window.setup.defaultName;
+				if(n>nameInput.length){
+					for(var i=nameInput.length; i<n; i++){
+						let element=document.createElement("input");
+						element.value=(user[i])?user[i]:defaultName[i];
+						element.playerNumber=i;
+						user[i]=element.value;
+						element.addEventListener("change",function(){
+							user[this.playerNumber]=this.value;
+							defaultName[this.playerNumber]=this.value;
+						});
+						list.appendChild(element);
+					}
+				}else if(n<nameInput.length){
+					for(var i=nameInput.length; i>n; i--){
+						list.removeChild(nameInput[i-1]);
+						window.user.pop();
+					}
+				}
+			}
+			question.innerText="How many players?";
+			number.type="number";
+			number.value=(setup.user.length>1)?setup.user.length:2;
+			number.min=2;
+			number.max=4;
+			number.step=1;
+			number.addEventListener("change", function(){
+				this.value=Math.floor(this.value);
+				this.value=Math.min(this.value,this.max);
+				this.value=Math.max(this.value,this.min);
+				updateList(this.value);
+			});
+			start.innerText="Let's go!";
+			start.classList="button";
+			start.addEventListener("click",startGame);
+			
+			container.appendChild(question);
+			container.appendChild(number);
+			container.appendChild(list);
+			container.appendChild(start);
+			
+			updateList(number.value);
+		}
+		
+		function main(){
+			gameSettings();
 		}
 	</script>
 </body>

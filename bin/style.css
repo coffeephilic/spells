@@ -30,27 +30,50 @@
 	
 }
 
-#container {
-	--traySize: 100px;
-	display: grid;
-	grid-template-columns: minmax(var(--traySize), auto) min-content minmax(var(--traySize), auto);
-	grid-template-rows: auto;
+#container, #container::before {
 	position: absolute;
 	top: 0;
 	left: 0;
 	width: 100vw;
 	height: 100vh;
+}
+#container {
 	font-family: var(--system);
 	color: var(--text);
+	transition: 2s;
+	background-color: #00000000;
+}
+#container::before {
+	content: "";
+	z-index:-10;
 	background: url("skin/background.jpg") no-repeat center center fixed;
 	background-size: cover;
-	transition: .6s;
+}
+#container.settings {
+	background-color: var(--background);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: left;
+}
+#container.game {
+	--traySize: 100px;
+	display: grid;
+	grid-template-columns: minmax(var(--traySize), auto) min-content minmax(var(--traySize), auto);
+	grid-template-rows: auto;
 }
 @media only screen and (max-width: 100vh){
-	#container {
+	#container.game {
 		grid-template-rows: minmax(var(--traySize), auto) min-content minmax(var(--traySize), auto);
 		grid-template-columns: auto;
+		height: auto;
 	}
+}
+
+.settings input {
+	display: block;
+	background-color: var(--background);
+	margin: 4px 0;
 }
 
 #menu div {
@@ -88,6 +111,15 @@
 }
 .square.block {
 	background-color: var(--backgroundInactive);
+}
+.square.initial {
+	background-color: #ffff0080;
+}
+.square.vowelBonus {
+	background-color: #00ff0080;
+}
+.square.consonantBonus {
+	background-color: #ff00ff80;
 }
 
 #tray, #menu, .square {
@@ -139,14 +171,14 @@
 }
 .tile {
 	height: 80px;
-	height: min(100%, 80px, auto);
+	height: min(100%, 80px);
 	line-height: 80px;
 	font-size: 60px;
 	font-family: var(--display);
 }
 #gameBoard .tile {
 	height: 6vh;
-	height: min(6vh, 80px, 100%, auto);
+	height: min(6vh, 80px, 100%);
 	line-height: inherit;
 	font-size: 1em;
 	display: flex;

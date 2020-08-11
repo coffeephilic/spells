@@ -73,7 +73,7 @@ function Player(){
 	}
 }
 
-function Game(){
+function Game(userName){
 	var self=this;
 	//this.dictionary=new Dictionary(); TODO: consider uncommenting this line after dictionary.c.js is finished
 	this.board=[];
@@ -114,14 +114,19 @@ function Game(){
 		if(!tile || this.board[coord.x][coord.y].letter || this.board[coord.x][coord.y].block){return;}
 		//let hand=tile.player.hand;
 		tile.player=this.lineup[this.currentPlayer];
-		let check=this.getWordFromBoard(coord,tile.letter);
-		// TODO: if(this is not a legal move){return;}
+		let check=this.getWordFromBoard(coord,tile);
+		if(this.board[coord.x][coord.y].type != 1
+			&& (coord.x==0 || !this.board[coord.x-1][coord.y].letter)
+			&& (coord.y==0 || !this.board[coord.x][coord.y-1].letter)
+			&& (coord.x==this.board.length-1 || !this.board[coord.x+1][coord.y].letter)
+			&& (coord.y==this.board[0].length-1 || !this.board[coord.x][coord.y+1].letter)
+		){return;} // Tiles may only be played on starting squares or adjacent to other tiles
 		//this.board[coord.x][coord.y]=hand.splice(hand.indexOf(tile),1)[0]; // Only if playing from the hand; If playing from the pool, then:
 		this.board[coord.x][coord.y]=this.pool.splice(this.pool.indexOf(tile),1)[0];
 		tile.player.selectedTile=null;
 		this.placeAnimation(tile,coord);
-		if(check.horizontalCoords.length > 1 && dictionary.check(check.horizontal)){this.evaluateWord(check.horizontalCoords, check.horizontalFill);}
-		if(check.verticalCoords.length > 1 && dictionary.check(check.vertical)){this.evaluateWord(check.verticalCoords, check.verticalFill);}
+		if(check.horizontalCoords.length > 1 && dictionary.check(check.horizontal)){this.evaluateWord(check.horizontalCoords, check.horizontalFill, check.bonus);}
+		if(check.verticalCoords.length > 1 && dictionary.check(check.vertical)){this.evaluateWord(check.verticalCoords, check.verticalFill, check.bonus);}
 		this.nextTurn();
 	}
 	this.getWordFromBoard=function(coord,placeholder){
@@ -135,11 +140,11 @@ function Game(){
 		output.horizontalCoords=[], output.verticalCoords=[];
 		output.horizontal="", output.vertical="";
 		for(var i=output.xMin; i<=output.xMax; i++){
-			output.horizontal+=((placeholder && i==coord.x)?placeholder:this.board[i][coord.y].letter);
+			output.horizontal+=((placeholder && i==coord.x)?placeholder.letter:this.board[i][coord.y].letter);
 			output.horizontalCoords.push({x:i,y:coord.y});
 		}
 		for(var i=output.yMin; i<=output.yMax; i++){
-			output.vertical+=((placeholder && i==coord.y)?placeholder:this.board[coord.x][i].letter);
+			output.vertical+=((placeholder && i==coord.y)?placeholder.letter:this.board[coord.x][i].letter);
 			output.verticalCoords.push({x:coord.x,y:i});
 		}
 		//Find whether the letters fill the available spaces
@@ -153,15 +158,21 @@ function Game(){
 			&& (output.yMin==0 || this.board[coord.x][output.yMin-1].block)
 			&& (output.yMax==this.board[0].length-1 || this.board[coord.x][output.yMax+1].block)
 		)?true:false;
+		output.bonus=(
+			(this.board[coord.x][coord.y].type==2 && placeholder.type===0)
+			||(this.board[coord.x][coord.y].type==3 && placeholder.type>0)
+		)?1:0;
+		output.bonus+=(placeholder.type==3)?1:0; console.log("Bonus: "+output.bonus);
 		return output;
 	}
-	this.evaluateWord=function(coordCollection, fillsContainer){
+	this.evaluateWord=function(coordCollection, fillsContainer, bonus){
 		// Scoring subject to change
 		for(var i=0; i<coordCollection.length; i++){
 			let tile=this.board[coordCollection[i].x][coordCollection[i].y];
 			tile.player.score+=tile.value;
 		}
-		if(fillsContainer){this.lineup[this.currentPlayer].score+=1;}
+		if(fillsContainer){this.lineup[this.currentPlayer].score+=1; console.log("Container filled, points+1");}
+		this.currentPlayer.score+=bonus;
 		this.evaluateWordAnimation(coordCollection);
 	}
 	this.nextTurn=function(){
@@ -183,6 +194,9 @@ function Game(){
 		width: 15
 		,height: 15
 		,maxBranch: 4
+		,startingSquare: 8
+		,vowelBonus: 8
+		,consonantBonus: 8
 	};
 	for(var i=0; i<boardSize.width; i++){
 		let col=[];
@@ -191,6 +205,7 @@ function Game(){
 		}
 		this.board.push(col);
 	}
+	// Carve out some space within the grid for the crossword
 	let free=[]; // An array of coordinates pointing to free spaces
 	let initialX=Math.floor(Math.random()*boardSize.width);
 	let initialY=Math.floor(Math.random()*boardSize.height);
@@ -256,8 +271,26 @@ function Game(){
 				break;
 		}
 	}
+	// Scatter some bonuses among the unblocked squares
+	let typePool=[];
+	for(var i=0; i<boardSize.startingSquare; i++){typePool.push(1);}
+	for(var i=0; i<boardSize.vowelBonus; i++){typePool.push(2);}
+	for(var i=0; i<boardSize.consonantBonus; i++){typePool.push(3);}
+	typePool.sort(function(){return 0.5-Math.random();});
+	while(typePool.length){
+		let s=free[Math.floor(Math.random()*free.length)];
+		if(!this.board[s.x][s.y].type
+			&& (s.x==0 || !this.board[s.x-1][s.y].type)
+			&& (s.y==0 || !this.board[s.x][s.y-1].type)
+			&& (s.x==this.board.length-1 || !this.board[s.x+1][s.y].type)
+			&& (s.y==this.board[0].length-1 || !this.board[s.x][s.y+1].type)
+		){
+			this.board[s.x][s.y].type=typePool.pop();
+		}
+	}
 	
 	// Populate the pool with tiles
+	/* // This was just for development and testing purposes.  We're not actually going to use Scrabble tiles.
 	let t=[
 		{l: "A", v: 1, quant: 9}
 		,{l: "B", v: 3, quant: 2}
@@ -290,7 +323,8 @@ function Game(){
 		for(var j=0; j<t[i].quant; j++){
 			this.pool.push(new Tile(t[i].l,t[i].v));
 		}
-	} this.pool=[];
+	}
+	*/
 	
 	// Populate the cup with dice
 	// t:0=vowels
@@ -321,18 +355,16 @@ function Game(){
 		}
 		this.cup.push(new Die(d[i].t,face));
 	}
-	
 	// Populate the lineup with players
-	let playerCount=4;
-	let defaultPlayerName=[
+	let n=(userName)?userName:[
 		"Player 1"
 		,"Player 2"
 		,"Player 3"
 		,"Player 4"
 	];
-	for(var i=0; i<playerCount; i++){
+	for(var i=0; i<n.length; i++){
 		this.lineup.push(new Player());
-		this.lineup[i].name=defaultPlayerName[i];
+		this.lineup[i].name=n[i];
 	}
 	this.nextTurn();
 }
