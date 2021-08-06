@@ -1,6 +1,6 @@
 :root {
 	
-	--accent: ffd8c7;
+	--accent: #ffd8c7;
 	--background: #d4d4d4c0;
 	--backgroundInactive: #adadad80;
 	--matteDark: #656565;
@@ -18,16 +18,27 @@
 	--borderRadius: 4px;
 	--matteBlur: 2px;
 	
-	--player0: #e3fcea;
-	--player1: #fcf7e3;
-	--player2: #e3e6fc;
-	--player3: #fce3e4;
+	/*
+	--player0: #e3fcea; green
+	--player1: #fcf7e3; yellow
+	--player2: #e3e6fc; blue
+	--player3: #fce3e4; red
+	*/
+	
+	--player0: #97fcb8;
+	--player1: #fce897;
+	--player2: #979cfc;
+	--player3: #fc9a97;
 	
 	--player0Highlight: #2e9957;
 	--player1Highlight: #997c1f;
 	--player2Highlight: #0f2299;
 	--player3Highlight: #991723;
 	
+	--die0: #db8a9d;
+	--die1: #74c0db;
+	--die2: #a3db69;
+	--die3: #dbd45e;
 }
 
 #container, #container::before {
@@ -46,7 +57,7 @@
 #container::before {
 	content: "";
 	z-index:-10;
-	background: url("skin/background.jpg") no-repeat center center fixed;
+	background: url("skin/background_01.jpg") no-repeat center center fixed;
 	background-size: cover;
 }
 #container.settings {
@@ -94,6 +105,44 @@
 	font-weight: bold;
 	transition: .6s;
 }
+#meter {
+	width: 120px;
+	height: 90px;
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(4, 30px);
+	grid-template-rows: repeat(3, 30px);
+	--player: var(--matteLight);
+}
+#meter .hatch {
+	margin: auto;
+	width: 13px;
+	height: 28px;
+	border: solid var(--matteDark) 1px;
+}
+#meter .active{
+	background-color: var(--player);
+}
+#meter .fullHouse {
+	background-color: var(--text);
+	box-shadow: 0 0 10px var(--matteLight), 0 0 8px inset var(--accent);
+	cursor: pointer;
+}
+#meter .die0,
+#meter .die1,
+#meter .die2,
+#meter .die3 {
+	width: 100%;
+	height: 100%;
+	position: relative;
+	border: none;
+}
+#meter .die0.active,
+#meter .die1.active,
+#meter .die2.active,
+#meter .die3.active {
+	cursor: pointer;
+}
 
 #gameBoard {
 	display: grid;
@@ -105,51 +154,92 @@
 .square {
 	background-color: var(--background);
 	backdrop-filter: blur(var(--matteBlur));
+	font-size: min(6vh, 6vw);
+	overflow: hidden;
 }
-.square:hover {
-	background-color: var(--accent);
+.square::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: -1;
+	background-size: cover;
+	opacity: .2;
+}
+.square.eligible:hover,
+.stretch .square.stretch:hover {
+	/* background-color: var(--accent); */
+	box-shadow: 1vh 1vh 2vh inset var(--matteDark), -1vh -1vh 2vh inset var(--accent);
+	transition: .4s;
 }
 .square.block {
 	background-color: var(--backgroundInactive);
 }
-.square.initial {
-	background-color: #ffff0080;
+.square.initial:empty {
+	background-color: #ffffffc0;
 }
-.square.vowelBonus {
-	background-color: #00ff0080;
+.square.initial:empty:before {
+	content: "\2605";
+	opacity: 1;
+	text-align: center;
+	position: relative;
+	height: auto;
 }
-.square.consonantBonus {
-	background-color: #ff00ff80;
+/*
+.square.vowel:empty {
+	background-color: var(--die0);
 }
+.square.common:empty {
+	background-color: var(--die1);
+}
+.square.scarce:empty {
+	background-color: var(--die2);
+}
+.square.rare:empty {
+	background-color: var(--die3);
+}
+*/
 
-#tray, #menu, .square {
+#menu, #tray, .square {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 }
 @media only screen and (max-width: 100vh){
-	#tray, #menu, .square {
+	#menu, #tray, .square {
 		flex-direction: inherit;
 		flex-flow: wrap;
 	}
+	#controls {
+		grid-template-rows: auto;
+		grid-template-columns: 1fr min-content;
+	}
+	#tray {
+		height: 100%;
+		width: calc(100vw - 120px);
+	}
+}
+#controls {
+	display: grid;
+	grid-template-rows: 1fr min-content;
+	align-items: center;
+	justify-content: center;
 }
 #tray {
 	flex-wrap: wrap;
-	height: 100vh;
-}
-@media only screen and (max-width: 100vh){
-	#tray {
-		height: auto;
-	}
+	width: 100%;
+	height: calc(100vh - 120px);
 }
 
 .tile, .button {
 	position: relative;
 	width: min(100%, 80px);
 	border-radius: var(--borderRadius);
-	box-shadow: 1.5px 1.5px 3px inset var(--matteLight), -1.5px -1.5px 3px inset var(--matteDark);
-	-webkit-box-shadow:  1.5px 1.5px 3px inset var(--matteLight), -1.5px -1.5px 3px inset var(--matteDark);
+	/* box-shadow: 1.5px 1.5px 3px inset var(--matteLight), -1.5px -1.5px 3px inset var(--matteDark); */
+	/* -webkit-box-shadow:  1.5px 1.5px 3px inset var(--matteLight), -1.5px -1.5px 3px inset var(--matteDark); */
 	text-align: center;
 	z-index:1;
 	transition: .6s;
@@ -157,10 +247,16 @@
 }
 .button {
 	background-color: var(--matteLight);
+	cursor: pointer;
+	user-select: none;
 }
-.button:after {
-	content:"";
-	width:100%;
+.button.end {
+	margin: 20px;
+	width: 80px;
+	height: 80px;
+	line-height:80px;
+	text-align: center;
+	border-radius: 50%;
 }
 #tray .tile {
 	margin: 2px;
@@ -170,21 +266,33 @@
 	border: 0;
 }
 .tile {
-	height: 80px;
+	display: inline-block;
+	/* height: 80px; */
 	height: min(100%, 80px);
 	line-height: 80px;
-	font-size: 60px;
+	font-size: 44px;
 	font-family: var(--display);
 }
+.tile::before,
+#meter div::before {
+	content: "";
+	background-size: cover;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
 #gameBoard .tile {
-	height: 6vh;
-	height: min(6vh, 80px, 100%);
+	/* height: 6vh; */
+	/* height: min(6vh, 80px, 100%); */
 	line-height: inherit;
-	font-size: 1em;
+	font-size: min(1em, 4vh);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	transition: .4s;
+	text-decoration: none;
 }
 .tile.word, .tile.selected {
 	color: var(--textInverted);
@@ -222,17 +330,65 @@
 	background-color: var(--player3Highlight);
 	--playerColor: var(--player3Highlight);
 }
-.tile.die0 {
-	background: linear-gradient(45deg, white 0%, var(--playerColor) 50%);
+#tray .tile,
+#meter div,
+#rerollPrompt .tile {
+	mask-size: cover;
+	-webkit-mask-size: cover
 }
-.tile.die1 {
-	background: linear-gradient(45deg, orange 0%, var(--playerColor) 50%);
+#tray .tile.die0,
+#meter .die0,
+#rerollPrompt .die0 {
+	mask-image:url('skin/die_mask_00.png');
+	-webkit-mask-image:url('skin/die_mask_00.png');
 }
-.tile.die2 {
-	background: linear-gradient(45deg, green 0%, var(--playerColor) 50%);
+#tray .tile.die1,
+#meter .die1,
+#rerollPrompt .die1 {
+	mask-image:url('skin/die_mask_01.png');
+	-webkit-mask-image:url('skin/die_mask_01.png');
 }
-.tile.die3 {
-	background: linear-gradient(45deg, yellow 0%, var(--playerColor) 50%);
+#tray .tile.die2,
+#meter .die2,
+#rerollPrompt .die2 {
+	mask-image:url('skin/die_mask_02.png');
+	-webkit-mask-image:url('skin/die_mask_02.png');
+}
+#tray .tile.die3,
+#meter .die3,
+#rerollPrompt .die3 {
+	mask-image:url('skin/die_mask_03.png');
+	-webkit-mask-image:url('skin/die_mask_03.png');
+}
+#tray .tile::before,
+#meter div::before,
+#rerollPrompt .tile::before {
+	opacity: .6;
+	z-index: -1;
+}
+#tray .tile.die0::before,
+#meter .die0::before,
+.square.die0:empty::before,
+#rerollPrompt .die0::before {
+	background-image:url('skin/die_00.png');
+}
+#tray .tile.die1::before,
+#meter .die1::before,
+.square.die1:empty::before,
+#rerollPrompt .die1::before {
+	background-image:url('skin/die_01.png');
+}
+#tray .tile.die2::before,
+#meter .die2::before,
+.square.die2:empty::before,
+#rerollPrompt .die2::before {
+	background-image:url('skin/die_02.png');
+}
+#tray .tile.die3::before,
+#meter .die3::before,
+.square.die3:empty::before,
+#rerollPrompt .die3::before {
+	background-image:url('skin/die_03.png');
 }
 
 .flare {
@@ -282,5 +438,77 @@
 		opacity: 0;
 		top: 50%;
 		left: 50%;
+	}
+}
+
+#wildcardPrompt {
+	font-size: 2em;
+}
+#wildcardPrompt input {
+	width: 2em;
+	height: 2em;
+}
+
+#screen {
+	display: none;
+	position: fixed;
+	width: 100vw;
+	height: 100vh;
+	z-index: 10;
+	background-color: var(--background);
+	top: 0;
+	left: 0;
+	opacity: .75;
+	backdrop-filter: blur(var(--matteBlur));
+}
+#modal {
+	display: none;
+	position: fixed;
+	max-width: 80vw;
+	max-height: 80vh;
+	overflow-y: auto;
+	background-color: var(--background);
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 20;
+	border-radius: var(--borderRadius);
+	padding: 12px;
+	font-family: var(--display);
+}
+#screen.active,
+#modal.active {
+	display: block;
+}
+
+#winner {
+	text-align: center;
+}
+#winner h3 {
+	font-weight: bold;
+	font-size: 2em;
+	margin: 0 2em;
+	animation: pulse 1s infinite;
+}
+@keyframes pulse {
+	0%, 100% {transform: scale(1);}
+	50% {transform: scale(1.2);}
+}
+
+
+@media only screen and (max-width: 100vh){
+	#tray {
+		width: auto;
+		height: 100%;
+	}
+}
+
+
+@media only screen and (max-width: 768px){
+	.tile {
+		width: max(2vw, 36px);
+		height: max(2vw, 36px);
+		line-height: max(2vw, 36px);
+		font-size: max(1.8vw, 32px);
 	}
 }

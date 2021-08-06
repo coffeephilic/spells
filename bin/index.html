@@ -14,14 +14,17 @@
     index.html.
 # /lib/js/ -- various first-party libraries and collections, intended to be
     reused on different projects.
-
+# dict/ -- dictionary and affix files, excerpted from LibreOffice made
+		available under Mozilla Public License v2.0 at
+		https://www.libreoffice.org
  -->
+<!DOCTYPE html>
 <html>
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta charset="UTF-8"/>
 	<link rel="stylesheet" type="text/css" href="style.css" />
-	<link rel="shortcut icon" type="image/x-icon" href="skin/icon.png" />
+	<!--link rel="shortcut icon" type="image/x-icon" href="skin/icon.png" /-->
 	<script>
 		window.setup={
 			user:[]
@@ -36,7 +39,8 @@
 </head>
 <body>
 	<div id="container" class="settings"></div>
-	<!--<script src="/lib/js/dictionary.c.js"></script>-->
+	<div id="screen"></div>
+	<div id="modal"></div>
 	<script src="fn.js"></script>
 	<script>
 		document.body.onload=main;
@@ -45,6 +49,8 @@
 			function Game(userName){
 				g.apply(this, [userName]);
 				var self=this;
+				this.meter=document.createElement("div");
+				this.tray=document.createElement("div");
 				this.display=function(){
 					let container=document.getElementById("container");
 					container.innerHTML="";
@@ -73,8 +79,122 @@
 					newGameButton.addEventListener("click",function(){gameSettings();});
 					menu.appendChild(newGameButton);
 					container.appendChild(menu);
-					let scoreTextHeight=(menu.offsetHeight-160)/this.lineup.length;
-					scoreBoard.style.fontSize="max(.4em, min(1em, "+scoreTextHeight+"px))";
+					let scoreTextHeight=Math.max((menu.offsetHeight-160)/this.lineup.length,24);
+					scoreBoard.style.fontSize="min(1em, "+scoreTextHeight+"px)";
+					
+					this.meter.id="meter";
+					menu.appendChild(this.meter);
+					var spellFunction=[
+						// type 0
+						()=>{
+							var list=[];
+							var prompt=document.createElement("div");
+							prompt.id="rerollPrompt";
+							prompt.innerText="Select dice to reroll: ";
+							for(var k=0; k<game.pool.length; k++){
+								if(game.pool[k].type>3){continue;}
+								let line=document.createElement("div");
+								let checkbox=document.createElement("input");
+								checkbox.type="checkbox";
+								checkbox.key=k;
+								checkbox.id="rerollDie"+k;
+								checkbox.addEventListener("change",function(){
+									if(this.checked){
+										list.push(this.key);
+									}else{
+										list.splice(list.indexOf(this.key),1);
+									}
+								});
+								let option=document.createElement("label");
+								option.htmlFor="rerollDie"+k;
+								option.classList="tile die"+game.pool[k].type;
+								option.innerText=game.pool[k].letter;
+								line.appendChild(checkbox);
+								line.appendChild(option);
+								prompt.appendChild(line);
+							}
+							let rerollButton=document.createElement("div");
+							rerollButton.classList="button";
+							rerollButton.innerText="Reroll";
+							rerollButton.addEventListener("click",function(){
+								if(self.reroll(list)){
+									self.rollAnimation();
+									dismiss();
+								}
+							});
+							prompt.appendChild(rerollButton);
+							focusOn(prompt);
+						},
+						// type 1
+						()=>{
+							if(self.stretch()){
+								document.getElementById("gameBoard").classList.add("stretch");
+							}
+						},
+						// type 2
+						()=>{
+							if(self.extraMove()){
+								self.rollAnimation();
+							}
+						},
+						// type 3
+						(isFullHouse=false)=>{
+							var prompt=document.createElement("div");
+							prompt.id="wildcardPrompt";
+							prompt.innerText="Choose a letter: ";
+							var input=document.createElement("input");
+							input.maxLength=1;
+							input.addEventListener("input", function(){ console.log(this);
+								if(self.addWildcard(this.value, isFullHouse)){
+									self.rollAnimation();
+									dismiss();
+								}
+							});
+							prompt.appendChild(input);
+							focusOn(prompt);
+							input.focus();
+						}
+					];
+					for(var i=3; i>0; i--){
+						for(var j=0; j<=3; j++){
+							let hatch=document.createElement("div");
+							hatch.value=i;
+							hatch.type=j;
+							hatch.classList="hatch";
+							hatch.evaluate=function(){
+								let player=self.lineup[self.currentPlayer];
+								if(player.mana[hatch.type]>=hatch.value){
+									hatch.classList.add("active");
+								}else{
+									hatch.classList.remove("active");
+								}
+								if(hatch.value==1
+									&& player.mana[0]
+									&& player.mana[1]
+									&& player.mana[2]
+									&& player.mana[3]
+								){
+									hatch.classList.add("fullHouse");
+								}else{
+									hatch.classList.remove("fullHouse");
+								}
+							}
+							if(i==3){
+								hatch.classList.add("die"+j);
+								hatch.addEventListener("click",function(){
+									if(!this.classList.contains("active")){return;}
+									spellFunction[this.type]();
+								});
+							}
+							if(i==1){
+								hatch.addEventListener("click",function(){
+									if(!this.classList.contains("active")){return;}
+									spellFunction[3](true);
+								});
+							}
+							this.meter.appendChild(hatch);
+						}
+					}
 					
 					let gameBoard=document.createElement("div");
 					gameBoard.id="gameBoard";
@@ -86,20 +206,27 @@
 						for(var x=0; x<game.board.length; x++){
 							var square=document.createElement("div");
 							square.coord={x:x,y:y};
+							square.square=game.board[x][y];
 							square.classList="square";
 							if(!game.board[x][y].block){
 								square.addEventListener("click",this.placeSelected);
 								square.addEventListener("dragover",function(event){event.preventDefault();});
 								square.addEventListener("drop",this.placeSelected);
 								switch(game.board[x][y].type){
+									case 0:
+											square.classList.add("die0");
+										break;
 									case 1:
-											square.classList.add("initial");
+											square.classList.add("die1");
 										break;
 									case 2:
-											square.classList.add("vowelBonus");
+											square.classList.add("die2");
 										break;
 									case 3:
-											square.classList.add("consonantBonus");
+											square.classList.add("die3");
+										break;
+									case 4:
+											square.classList.add("initial", "eligible");
 										break;
 								}
 							}else{
@@ -112,12 +239,20 @@
 					}
 					container.appendChild(gameBoard);
 					let tileLetterHeight=square.offsetHeight-12;
-					//gameBoard.style.fontSize="max(1em, "+tileLetterHeight+"px)"; // Safari on iOS does not seem to do well with this.
 					gameBoard.style.fontSize=tileLetterHeight;
 					
-					let tray=document.createElement("div");
-					tray.id="tray";
-					container.appendChild(tray);
+					let controls=document.createElement("div");
+					controls.id="controls";
+					container.appendChild(controls);
+					
+					this.tray.id="tray";
+					controls.appendChild(this.tray);
+					
+					let passButton=document.createElement("div");
+					passButton.classList="end button";
+					passButton.innerText="End turn";
+					passButton.addEventListener("click",function(){self.nextTurn();});
+					controls.appendChild(passButton);
 					
 				}
 				this.buildTile=function(tile){
@@ -125,10 +260,11 @@
 						tile.element=tileElement;
 						tileElement.innerText=tile.letter;
 						tileElement.tile=tile;
-						tileElement.classList.add("tile","player"+this.currentPlayer,"die"+tile.type);
+						tileElement.classList.add("tile","die"+tile.type);
+						if(this.lineup[this.currentPlayer].movesAvailable){tileElement.classList.add("player"+this.currentPlayer);}
 						tileElement.select=function(){
 							self.lineup[self.currentPlayer].selectedTile=this.tile;
-							let allTiles=tray.getElementsByClassName("tile");
+							let allTiles=self.tray.getElementsByClassName("tile");
 							for(var j=0; j<allTiles.length; j++){
 								allTiles[j].classList.remove("selected");
 							}
@@ -141,50 +277,55 @@
 				}
 				this.nextTurnAnimation=function(){
 					var player=this.lineup[this.currentPlayer];
-					var tray=document.getElementById("tray");
-					/*tray.innerHTML="";
-					let passButton=document.createElement("div");
-					passButton.classList="button";
-					passButton.innerText="Pass";
-					passButton.addEventListener("click",function(){self.nextTurn();});
-					tray.appendChild(passButton);
-					tray.appendChild(document.createElement("hr"));
-					for(var i=0; i<player.hand.length; i++){
-						tray.appendChild(this.buildTile(player.hand[i]));
-					}*/
-					let t=tray.getElementsByClassName("tile");
+					let t=this.tray.getElementsByClassName("tile");
 					for(var i=0; i<t.length; i++){
 						t[i].classList.remove("player0","player1","player2","player3");
 						t[i].classList.add("player"+this.currentPlayer);
 					}
+					document.getElementById("gameBoard").classList.remove("stretch");
 				}
-				this.drawAnimation=function(tile, player){
-					let tileElement=this.buildTile(tile);
-					document.getElementById("tray").appendChild(tileElement);
-					tileElement.select();
+				this.updateMeterAnimation=function(){
+					this.meter.style.setProperty('--player',"var(--player"+this.currentPlayer+")");
+					let h=this.meter.getElementsByClassName("hatch");
+					for(var i=0; i<h.length; i++){
+						h[i].evaluate();
+					}
 				}
 				this.rollAnimation=function(){
-					let tray=document.getElementById("tray");
-					tray.innerHTML="";
-					let passButton=document.createElement("div");
-					passButton.classList="button";
-					passButton.innerText="Pass";
-					passButton.addEventListener("click",function(){self.nextTurn();});
-					tray.appendChild(passButton);
-					//tray.appendChild(document.createElement("hr"));
+					this.tray.innerHTML="";
 					for(var i=0; i<this.pool.length; i++){
 						let tileElement=this.buildTile(this.pool[i]);
-						tray.appendChild(tileElement);
+						this.tray.appendChild(tileElement);
 					}
 				}
 				this.placeAnimation=function(tile,coord){
-					let square=document.getElementById("gameBoard").grid[coord.x][coord.y];
+					let grid=document.getElementById("gameBoard").grid;
+					let square=grid[coord.x][coord.y];
 					square.appendChild(tile.element);
 					tile.element.removeEventListener("click", tile.element.select);
 					tile.element.removeEventListener("drag", tile.element.select);
 					tile.element.classList.remove("selected");
-					square.classList.remove("initial","vowelBonus","consonantBonus");
+					square.classList.remove("eligible", "stretch");
 					tile.element.draggable=false;
+					
+					for(var i=0; i<grid.length; i++){
+						for(var j=0; j<grid[i].length; j++){
+							let s=grid[i][j];
+							s.classList.remove("eligible", "stretch");
+							if(s.square.dist==1){
+								s.classList.add("eligible");
+							}else if(s.square.dist==2){
+								s.classList.add("stretch");
+							}
+						}
+					}
+					if(!this.lineup[this.currentPlayer].movesAvailable){
+						let tray=document.getElementById("tray");
+						let t=tray.getElementsByClassName("tile");
+						for(var i=0; i<t.length; i++){
+							t[i].classList.remove("player0","player1","player2","player3");
+						}
+					}
 				}
 				this.evaluateWordAnimation=function(coordCollection){
 					let grid=document.getElementById("gameBoard").grid;
@@ -216,6 +357,16 @@
 					if(event.target.isOccupied){return;}
 					self.place(self.lineup[self.currentPlayer].selectedTile,event.target.coord);
 					event.target.isOccupied;
+				}
+				
+				this.winAnimation=function(player){
+					let card=document.createElement("div");
+					card.id="winner";
+					card.innerText="WINNER!";
+					let name=document.createElement("h3");
+					name.innerText=player.name;
+					card.appendChild(name);
+					focusOn(card);
 				}
 			}
 			Game.prototype=g.prototype;
@@ -260,7 +411,7 @@
 				}else if(n<nameInput.length){
 					for(var i=nameInput.length; i>n; i--){
 						list.removeChild(nameInput[i-1]);
-						window.user.pop();
+						window.setup.user.pop();
 					}
 				}
 			}
@@ -287,6 +438,33 @@
 			
 			updateList(number.value);
 		}
+		
+		//focusOn <string>content ## content is passed as innerHTML to the modal
+		//focusOn <element>content ## content is appended as child to the modal
+		function focusOn(content){
+			document.getElementById("screen").classList.add("active");
+			let modal=document.getElementById("modal");
+			modal.classList.add("active");
+			if(typeof content=="string"){
+				modal.innerHTML=content;
+			}else{
+				modal.innerHTML="";
+				modal.appendChild(content);
+			}
+		}
+		function dismiss(){
+			document.getElementById("screen").classList.remove("active");
+			document.getElementById("modal").classList.remove("active");
+		}
+		
+		document.getElementById("screen").addEventListener("click",dismiss);
+		
+		//Keyboard shortcuts
+		window.addEventListener("keyup",(event)=>{
+			switch(event.keyCode){
+				case 27: dismiss(); break; //escape key
+			}
+		});
 		
 		function main(){
 			gameSettings();
