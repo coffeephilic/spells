@@ -43,7 +43,7 @@ loadScript("../lib/js/thirdParty/hunspell-spellchecker/lib/dictionary.js"
 	);}
 );
 */
-loadScript("../lib/js/dictionary.c.js",function(){
+loadScript("/spells/lib/js/dictionary.c.js",function(){
 	window.dictionary=new Dictionary("dict/en_US.dic","dict/en_US.aff");
 });
 
