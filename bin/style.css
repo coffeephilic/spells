@@ -1,8 +1,8 @@
 :root {
 	
 	--accent: #ffd8c7;
-	--background: #d4d4d4c0;
-	--backgroundInactive: #adadad80;
+	--background: #e4e4e440;
+	--backgroundInactive: #80808080;
 	--matteDark: #656565;
 	--matteLight: #ededed;
 	--line: #4d4d4d80;
@@ -16,7 +16,7 @@
 	--input: Courier;
 	
 	--borderRadius: 4px;
-	--matteBlur: 2px;
+	--matteBlur: 4px;
 	
 	/*
 	--player0: #e3fcea; green
@@ -88,7 +88,7 @@
 }
 
 #menu div {
-	margin: 12px;
+	margin: 12px 6px;
 }
 #scoreBoard {
 	display: grid;
@@ -113,6 +113,9 @@
 	grid-template-columns: repeat(4, 30px);
 	grid-template-rows: repeat(3, 30px);
 	--player: var(--matteLight);
+	--mouseX: 0;
+	--mouseY: 0;
+	--titleText: "hot dog";
 }
 #meter .hatch {
 	margin: auto;
@@ -142,6 +145,14 @@
 #meter .die2.active,
 #meter .die3.active {
 	cursor: pointer;
+}
+
+#meter:hover::after {
+	content: var(--titleText);
+	position: absolute;
+	font-size: .6em;
+	left: var(--mouseX);
+	top: var(--mouseY);
 }
 
 #gameBoard {
@@ -249,6 +260,11 @@
 	background-color: var(--matteLight);
 	cursor: pointer;
 	user-select: none;
+}
+
+#modal .button {
+	width: auto;
+	margin: 6px;
 }
 .button.end {
 	margin: 20px;
@@ -403,7 +419,7 @@
 		/*text-shadow: 2px 2px 2px var(--matteDark);*/
 	}
 	50% {
-		transform: scale(1.6);
+		transform: scale(1.2);
 		/*text-shadow: 0px 0px 2px var(--matteDark);*/
 	}
 	100% {

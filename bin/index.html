@@ -35,6 +35,7 @@
 				,"Player 4"
 			]
 		};
+		window.libraryLocation="/spells/lib/js/";
 	</script>
 </head>
 <body>
@@ -51,6 +52,14 @@
 				var self=this;
 				this.meter=document.createElement("div");
 				this.tray=document.createElement("div");
+				
+				function flare(element,delay=0){
+					let t=setTimeout(function(){
+						element.classList.add("flare");
+						let t1=setTimeout(function(){element.classList.remove("flare");},1200);
+					},delay*120);
+				}
+				
 				this.display=function(){
 					let container=document.getElementById("container");
 					container.innerHTML="";
@@ -59,6 +68,45 @@
 					
 					let menu=document.createElement("div");
 					menu.id="menu";
+					
+					let buttonBox=document.createElement("div");
+					
+					let newGameButton=document.createElement("div");
+					newGameButton.innerText="New Game";
+					newGameButton.classList="button";
+					newGameButton.addEventListener("click",function(){gameSettings();});
+					buttonBox.appendChild(newGameButton);
+					
+					let rulesButton=document.createElement("div");
+					rulesButton.innerText="Rules";
+					rulesButton.classList="button";
+					rulesButton.addEventListener("click",function(){
+						let rulesMenu=document.createElement("div");
+						
+						let basicsPrompt=document.createElement("div");
+						basicsPrompt.classList="button";
+						basicsPrompt.innerText="The basics";
+						basicsPrompt.addEventListener("click",()=>{
+							dismiss();
+							howTo.basics.start();
+						});
+						rulesMenu.appendChild(basicsPrompt);
+						
+						let spellsPrompt=document.createElement("div");
+						spellsPrompt.classList="button";
+						spellsPrompt.innerText="Casting spells";
+						spellsPrompt.addEventListener("click",()=>{
+							dismiss();
+							howTo.spells.start();
+						});
+						rulesMenu.appendChild(spellsPrompt);
+						
+						focusOn(rulesMenu);
+					});
+					buttonBox.appendChild(rulesButton);
+					
+					menu.appendChild(buttonBox);
+					
 					let scoreBoard=document.createElement("div");
 					scoreBoard.id="scoreBoard";
 					for(var i=0; i<this.lineup.length; i++){
@@ -73,11 +121,7 @@
 						scoreBoard.appendChild(score);
 					}
 					menu.appendChild(scoreBoard);
-					let newGameButton=document.createElement("div");
-					newGameButton.innerText="New Game";
-					newGameButton.classList="button";
-					newGameButton.addEventListener("click",function(){gameSettings();});
-					menu.appendChild(newGameButton);
+					
 					container.appendChild(menu);
 					let scoreTextHeight=Math.max((menu.offsetHeight-160)/this.lineup.length,24);
 					scoreBoard.style.fontSize="min(1em, "+scoreTextHeight+"px)";
@@ -128,13 +172,20 @@
 						// type 1
 						()=>{
 							if(self.stretch()){
-								document.getElementById("gameBoard").classList.add("stretch");
+								let board=document.getElementById("gameBoard");
+								board.classList.add("stretch");
+								let stretch=board.getElementsByClassName("stretch");
+								for(var i=0; i<stretch.length; i++){
+									if(stretch[i].classList.contains("initial")){continue;}
+									flare(stretch[i],i);
+								}
 							}
 						},
 						// type 2
 						()=>{
 							if(self.extraMove()){
 								self.rollAnimation();
+								flare(self.tray);
 							}
 						},
 						// type 3
@@ -144,7 +195,7 @@
 							prompt.innerText="Choose a letter: ";
 							var input=document.createElement("input");
 							input.maxLength=1;
-							input.addEventListener("input", function(){ console.log(this);
+							input.addEventListener("input", function(){
 								if(self.addWildcard(this.value, isFullHouse)){
 									self.rollAnimation();
 									dismiss();
@@ -180,10 +231,19 @@
 								}
 							}
 							if(i==3){
-								hatch.classList.add("die"+j);
+								hatch.type=j;
+								hatch.classList.add("gem","die"+j);
 								hatch.addEventListener("click",function(){
 									if(!this.classList.contains("active")){return;}
 									spellFunction[this.type]();
+								});
+								hatch.addEventListener("pointermove",function(event){
+									window.requestAnimationFrame(function(){
+										if(!hatch.classList.contains("active")){return;}
+										self.meter.style.setProperty('--titleText',(["'Reroll'","'Stretch'","'Extra move'","'Wildcard'"])[hatch.type]);
+										self.meter.style.setProperty('--mouseX',(event.clientX-self.meter.offsetLeft)+"px");
+										self.meter.style.setProperty('--mouseY',(event.clientY-12-self.meter.offsetTop)+"px");
+									});
 								});
 							}
 							if(i==1){
@@ -191,7 +251,18 @@
 									if(!this.classList.contains("active")){return;}
 									spellFunction[3](true);
 								});
+								hatch.addEventListener("pointermove",function(event){
+									window.requestAnimationFrame(function(){
+										if(!hatch.classList.contains("fullHouse")){return;}
+										self.meter.style.setProperty('--titleText',"'Wildcard'");
+										self.meter.style.setProperty('--mouseX',(event.clientX-self.meter.offsetLeft)+"px");
+										self.meter.style.setProperty('--mouseY',(event.clientY-12-self.meter.offsetTop)+"px");
+									});
+								});
 							}
+							hatch.addEventListener("pointerleave",function(){
+								self.meter.style.setProperty('--titleText',"''");
+							});
 							this.meter.appendChild(hatch);
 						}
 					}
@@ -329,12 +400,6 @@
 				}
 				this.evaluateWordAnimation=function(coordCollection){
 					let grid=document.getElementById("gameBoard").grid;
-					function flare(element,delay=0){
-						let t=setTimeout(function(){
-							element.classList.add("flare");
-							let t1=setTimeout(function(){element.classList.remove("flare");},1200);
-						},delay*120);
-					}
 					let playerUpdate=[];
 					for(var i=0; i<this.lineup.length; i++){playerUpdate.push(false);}
 					for(var i=0; i<coordCollection.length; i++){
@@ -456,13 +521,164 @@
 			document.getElementById("screen").classList.remove("active");
 			document.getElementById("modal").classList.remove("active");
 		}
-		
 		document.getElementById("screen").addEventListener("click",dismiss);
+		
+		//Tutorial
+		loadScript(libraryLocation+"tutorial.c.js",()=>{
+			Tutorial.prototype.onStart=function(){
+				window.currentTutorial=this;
+			}
+			Tutorial.prototype.onSkip=function(){
+				let currentStep=this.sequence[this.currentStep];
+				currentStep.onComplete && currentStep.onComplete();
+				window.currentTutorial=null;
+			}
+			Tutorial.prototype.populateSkipButtonLabel=function(){
+				let skipLabel=document.createElement("span");
+				skipLabel.innerText="Skip";
+				return skipLabel;
+			}
+			window.howTo=[];
+			
+			//Tutorial.addStep(text,focus,completionCondition,onActivate,onComplete)
+			
+			howTo.basics=new Tutorial();
+			howTo.basics.addStep({
+				"text":()=>{return "The goal of the game is to score points by making words on the game board.";}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "This is the scoreboard.  The first player is represented by the color green, the second by yellow, and so on.";}
+				,"focus":()=>{return document.getElementById("scoreBoard");}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "These are the dice.  The dice are "+(["green","yellow","blue","red"])[game.currentPlayer]+" right now, which means that it's "+game.lineup[game.currentPlayer].name+"'s turn.";}
+				,"focus":()=>{return game.tray;}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "When it's your turn, you can put a letter on the board.  You can put one on these starting squares, which are marked with a star, at any time.  You can drag and drop a letter onto the board, or you can click to select the letter and then the square on the board.";}
+				,"focus":()=>{
+					let matchingSquares = document.getElementById("gameBoard").getElementsByClassName("initial");
+					let output=matchingSquares[0];
+					for(i in matchingSquares){
+						if(matchingSquares[i].classList.contains("tile")){continue;}
+						if(!matchingSquares[i].children.length){
+							output=matchingSquares[i];
+							break;
+						}
+					}
+					return output;
+				}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "When there are tiles on the board already, you can also place one next to a tile that's been played previously";}
+				,"focus":()=>{
+					let matchingSquares=document.getElementById("gameBoard").getElementsByClassName("initial");
+					let output=null;
+					for(i in matchingSquares){
+						if(!matchingSquares[i].classList || matchingSquares[i].classList.contains("initial")){continue;}
+						if(!matchingSquares[i].children.length){
+							output=matchingSquares[i];
+							break;
+						}
+					}
+					return output;
+				}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "When all of the squares for a word are filled up, each player receives one point for each letter that they contributed to the word.  All of the consecutive spaces in a row or column must be filled for this to happen, and the computer must be able to find the word in its dictionary.";}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "The squares at an intersection can be counted twice if there is a word in both directions.";}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "When you've finished everything that you want to do with your turn, click the \"End turn\" button to let the next player take their turn.  If you're stumped, you can use this button to pass to the next player.";}
+				,"focus":()=>{return document.getElementsByClassName("end")[0];}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "The dice that were used are rolled again at the end of every turn.";}
+				,"focus":()=>{return document.getElementsByClassName("end")[0];}
+			});
+			howTo.basics.addStep({
+				"text":()=>{return "The first player to reach 15 points is the winner.  If two or more players reach 15 points at the same time, the winner is the player whose turn is soonest.";}
+			});
+			
+			howTo.spells=new Tutorial();
+			howTo.spells.addStep({
+				"text":()=>{return "To use spells, you must first power up your gems by placing tiles on the board.  Play this round tile, for example, to gain one unit of power for the circle gem.";}
+				,"focus":()=>{return game.tray.getElementsByClassName("die0")[0];}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "If you place the tile on a square with the matching symbol, you'll receive double the power.";}
+				,"focus":()=>{
+					let matchingSquares = document.getElementById("gameBoard").getElementsByClassName("die0");
+					let output=matchingSquares[0];
+					for(i in matchingSquares){
+						if(matchingSquares[i].classList.contains("tile")){continue;}
+						if(!matchingSquares[i].children.length){
+							output=matchingSquares[i];
+							break;
+						}
+					}
+					return output;
+				;}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "This is your power meter.  As you play, the meter will begin to fill.";}
+				,"focus":()=>{return game.meter;}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "When you collect enough power, the gem at the top of the power meter will light up.  Then you can click on the gem to activate a spell.";}
+				,"focus":()=>{return game.meter;}
+				,"onActivate":()=>{
+					for(var i=0; i<4; i++){
+						game.meter.children[i].classList.add("active");
+					}
+				}
+				,"onComplete":()=>{game.updateMeterAnimation();}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "The circle gem allows you to reroll any of the dice.  You can reroll multiple dice if you want to.";}
+				,"focus":()=>{return game.meter.getElementsByClassName("die0")[0];}
+				,"onActivate":()=>{game.meter.getElementsByClassName("die0")[0].classList.add("active");}
+				,"onComplete":()=>{game.updateMeterAnimation();}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "The diamond gem allows you to skip over one space when you place a tile.  You can only use it on the same turn.";}
+				,"focus":()=>{return game.meter.getElementsByClassName("die1")[0];}
+				,"onActivate":()=>{game.meter.getElementsByClassName("die1")[0].classList.add("active");}
+				,"onComplete":()=>{game.updateMeterAnimation();}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "The pentagon gem allows you to place an additional tile during your turn.";}
+				,"focus":()=>{return game.meter.getElementsByClassName("die2")[0];}
+				,"onActivate":()=>{game.meter.getElementsByClassName("die2")[0].classList.add("active");}
+				,"onComplete":()=>{game.updateMeterAnimation();}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "The flower tile allows you to choose a wildcard to add to the tray of selectable dice.  Wildcards are worth zero points and cannot be rerolled.";}
+				,"focus":()=>{return game.meter.getElementsByClassName("die3")[0];}
+				,"onActivate":()=>{game.meter.getElementsByClassName("die3")[0].classList.add("active");}
+				,"onComplete":()=>{game.updateMeterAnimation();}
+			});
+			howTo.spells.addStep({
+				"text":()=>{return "You can also get a wildcard by spending one unit of each type of power.";}
+				,"focus":()=>{return game.meter;}
+				,"onActivate":()=>{
+					for(var i=8; i<12; i++){
+						game.meter.children[i].classList.add("fullHouse");
+					}
+				}
+				,"onComplete":()=>{game.updateMeterAnimation();}
+			});
+		});
 		
 		//Keyboard shortcuts
 		window.addEventListener("keyup",(event)=>{
 			switch(event.keyCode){
-				case 27: dismiss(); break; //escape key
+				case 27:
+					dismiss();
+					if(window.currentTutorial){window.currentTutorial.skip();}
+					break; //escape key
 			}
 		});
 		
